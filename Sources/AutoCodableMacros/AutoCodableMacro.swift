@@ -3,31 +3,59 @@ import SwiftSyntax
 import SwiftSyntaxBuilder
 import SwiftSyntaxMacros
 
-/// Implementation of the `stringify` macro, which takes an expression
-/// of any type and produces a tuple containing the value of that expression
-/// and the source code that produced the value. For example
-///
-///     #stringify(x + y)
-///
-///  will expand to
-///
-///     (x + y, "x + y")
-public struct StringifyMacro: ExpressionMacro {
-    public static func expansion(
-        of node: some FreestandingMacroExpansionSyntax,
-        in context: some MacroExpansionContext
-    ) -> ExprSyntax {
-        guard let argument = node.arguments.first?.expression else {
-            fatalError("compiler bug: the macro does not have any arguments")
-        }
-
-        return "(\(argument), \(literal: argument.description))"
-    }
-}
-
 @main
 struct AutoCodablePlugin: CompilerPlugin {
     let providingMacros: [Macro.Type] = [
-        StringifyMacro.self,
+        AutoCodableMacro.self
     ]
 }
+
+public struct AutoCodableMacro: MemberMacro {
+    public static func expansion(
+        of node: AttributeSyntax,
+        providingMembersOf decl: some DeclGroupSyntax,
+        in context: some MacroExpansionContext
+    ) throws -> [DeclSyntax] {
+        guard let structDecl = decl.as(StructDeclSyntax.self) else { return [] }
+
+        var codingKeys: [String] = []
+
+        for member in structDecl.memberBlock.members {
+            guard
+                let varDecl = member.decl.as(VariableDeclSyntax.self),
+                let binding = varDecl.bindings.first,
+                let pattern = binding.pattern.as(IdentifierPatternSyntax.self)
+            else { continue }
+
+            let propertyName = pattern.identifier.text
+            let snakeCase = convertToSnakeCase(propertyName)
+
+            if snakeCase != propertyName {
+                codingKeys.append("case \(propertyName) = \"\(snakeCase)\"")
+            } else {
+                codingKeys.append("case \(propertyName)")
+            }
+        }
+
+        let codingKeyDecl = """
+        enum CodingKeys: String, CodingKey {
+            \(codingKeys.joined(separator: "\n    "))
+        }
+        """
+
+        return [DeclSyntax(stringLiteral: codingKeyDecl)]
+    }
+
+    private static func convertToSnakeCase(_ input: String) -> String {
+        var result = ""
+        for char in input {
+            if char.isUppercase {
+                result += "_" + char.lowercased()
+            } else {
+                result += String(char)
+            }
+        }
+        return result
+    }
+}
+
