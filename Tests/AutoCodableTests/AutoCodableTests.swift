@@ -9,40 +9,36 @@ import XCTest
 import AutoCodableMacros
 
 let testMacros: [String: Macro.Type] = [
-    "stringify": StringifyMacro.self,
+    "AutoCodable": AutoCodableMacro.self,
 ]
 #endif
 
 final class AutoCodableTests: XCTestCase {
-    func testMacro() throws {
-        #if canImport(AutoCodableMacros)
-        assertMacroExpansion(
-            """
-            #stringify(a + b)
-            """,
-            expandedSource: """
-            (a + b, "a + b")
-            """,
-            macros: testMacros
-        )
-        #else
-        throw XCTSkip("macros are only supported when running tests for the host platform")
-        #endif
-    }
-
-    func testMacroWithStringLiteral() throws {
-        #if canImport(AutoCodableMacros)
-        assertMacroExpansion(
-            #"""
-            #stringify("Hello, \(name)")
-            """#,
-            expandedSource: #"""
-            ("Hello, \(name)", #""Hello, \(name)""#)
-            """#,
-            macros: testMacros
-        )
-        #else
-        throw XCTSkip("macros are only supported when running tests for the host platform")
-        #endif
-    }
+    func testCodingKeysGeneration() {
+            assertMacroExpansion(
+                """
+                @AutoCodable
+                struct User {
+                    let firstName: String
+                    let lastName: String
+                    let age: Int
+                }
+                """,
+                expandedSource:
+                """
+                struct User {
+                    let firstName: String
+                    let lastName: String
+                    let age: Int
+                
+                    enum CodingKeys: String, CodingKey {
+                        case firstName = "first_name"
+                        case lastName = "last_name"
+                        case age
+                    }
+                }
+                """,
+                macros: testMacros
+            )
+        }
 }
