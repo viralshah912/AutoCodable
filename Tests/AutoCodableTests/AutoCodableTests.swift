@@ -7,18 +7,21 @@ import XCTest
 // Macro implementations build for the host, so the corresponding module is not available when cross-compiling. Cross-compiled tests may still make use of the macro itself in end-to-end tests.
 #if canImport(AutoCodableMacros)
 import AutoCodableMacros
-import AutoCodableShared
-
-let testMacros: [String: Macro.Type] = [
-    "AutoCodable": AutoCodableMacro.self,
-]
 #endif
 
+import AutoCodableShared
+import AutoCodable
+
+let testMacros: [String: Macro.Type] = [
+    "Codable": AutoCodableMacro.self,
+]
+
 final class AutoCodableTests: XCTestCase {
+    
     func testSnakeCaseGeneration() {
         assertMacroExpansion(
                 """
-                @AutoCodable(style: .snake_case)
+                @Codable(style: .snake_case)
                 struct User: Codable {
                     let firstName: String
                     let lastName: String
@@ -48,7 +51,7 @@ final class AutoCodableTests: XCTestCase {
     func testUpperCaseEnumCase() {
         assertMacroExpansion(
                 """
-                @AutoCodable(style: .uppercase)
+                @Codable(style: .uppercase)
                 enum State: String, Codable {
                     case active
                     case inactive
@@ -78,7 +81,7 @@ final class AutoCodableTests: XCTestCase {
     func testCamelCaseStyle() {
         assertMacroExpansion(
                 """
-                @AutoCodable(style: .camelCase)
+                @Codable(style: .camelCase)
                 struct LoginData: Codable {
                     let UserID: String
                     let SessionToken: String
@@ -102,7 +105,7 @@ final class AutoCodableTests: XCTestCase {
     func testHttpHeaderStyle() {
         assertMacroExpansion(
                 """
-                @AutoCodable(style: .httpHeader)
+                @Codable(style: .httpHeader)
                 struct Headers: Codable {
                     let contentType: String?
                     let contentSecurityPolicy: String?
@@ -129,7 +132,7 @@ final class AutoCodableTests: XCTestCase {
     func testOriginalStyle() {
         assertMacroExpansion(
                 """
-                @AutoCodable
+                @Codable
                 struct OriginalStyle: Codable {
                     let name: String
                     let age: Int

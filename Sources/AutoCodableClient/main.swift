@@ -1,6 +1,6 @@
 import AutoCodable
 
-@AutoCodable
+@Codable
 struct User: Codable {
     let firstName: String
     let lastName: String
@@ -9,7 +9,7 @@ struct User: Codable {
 }
 
 
-@AutoCodable(style: .uppercase)
+@Codable(style: .uppercase)
 enum State: String, Codable {
     case active
     case inactive
@@ -17,7 +17,7 @@ enum State: String, Codable {
     case closed
 }
 
-@AutoCodable(style: .httpHeader)
+@Codable(style: .httpHeader)
 struct Headers: Codable {
     let contentType: String?
     let contentSecurityPolicy: String?

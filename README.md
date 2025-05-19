@@ -24,13 +24,13 @@ And add "AutoCodable" to your target's dependencies.
 
 # 🛠️ Usage
 
-Simply annotate your struct or enum with the @AutoCodable macro:
+Simply annotate your struct or enum with the @Codable macro:
 
 Example 1: Struct with snake_case style
 ```swift
 import AutoCodable
 
-@AutoCodable(style: .snake_case)
+@Codable(style: .snake_case)
 struct User: Codable {
     var firstName: String
     var lastName: String
@@ -53,7 +53,7 @@ Example 2: Enum with httpHeader style
 ```swift
 import AutoCodable
 
-@AutoCodable(style: .httpHeader)
+@Codable(style: .httpHeader)
 enum HeaderKey: String, Codable {
     case contentType
     case acceptEncoding
@@ -71,7 +71,7 @@ enum CodingKeys: String, CodingKey {
 
 # 🧠 How It Works
 
-The @AutoCodable macro uses Swift’s macro system to introspect the declarations of your struct or enum and automatically generate a CodingKeys enum with string representations transformed to the specified AutoCodableCaseStyle.
+The @Codable macro uses Swift’s macro system to introspect the declarations of your struct or enum and automatically generate a CodingKeys enum with string representations transformed to the specified AutoCodableCaseStyle.
 
 Supported case styles:
 
@@ -91,7 +91,7 @@ AutoCodableMacro: The macro implementation that inspects and transforms the synt
 
 AutoCodablePlugin: Registers the macro plugin.
 
-AutoCodableShared: Contains shared declarations like the @AutoCodable macro and AutoCodableCaseStyle.
+AutoCodableShared: Contains shared declarations like the @Codable macro and AutoCodableCaseStyle.
 
 # 📋 License
 
