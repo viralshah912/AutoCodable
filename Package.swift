@@ -28,13 +28,15 @@ let package = Package(
         .macro(
             name: "AutoCodableMacros",
             dependencies: [
+                "AutoCodableShared",
                 .product(name: "SwiftSyntaxMacros", package: "swift-syntax"),
                 .product(name: "SwiftCompilerPlugin", package: "swift-syntax")
             ]
         ),
 
         // Library that exposes a macro as part of its API, which is used in client programs.
-        .target(name: "AutoCodable", dependencies: ["AutoCodableMacros"]),
+        .target(name: "AutoCodable", dependencies: ["AutoCodableMacros", "AutoCodableShared"]),
+        .target(name: "AutoCodableShared", dependencies: []),
 
         // A client of the library, which is able to use the macro in its own code.
         .executableTarget(name: "AutoCodableClient", dependencies: ["AutoCodable"]),
@@ -44,6 +46,7 @@ let package = Package(
             name: "AutoCodableTests",
             dependencies: [
                 "AutoCodableMacros",
+                "AutoCodableShared",
                 .product(name: "SwiftSyntaxMacrosTestSupport", package: "swift-syntax"),
             ]
         ),
