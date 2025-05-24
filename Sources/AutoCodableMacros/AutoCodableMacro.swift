@@ -1,4 +1,5 @@
 import SwiftCompilerPlugin
+import Foundation
 import SwiftSyntax
 import SwiftSyntaxBuilder
 import SwiftSyntaxMacros
@@ -35,39 +36,45 @@ public struct AutoCodableMacro: MemberMacro {
         else {
             return .original
         }
-        
         return style
     }
-    
+
     private static func generateCodingKeys(for structDecl: StructDeclSyntax, style: AutoCodableCaseStyle) throws -> [DeclSyntax] {
         var codingKeys: [String] = []
         
         for member in structDecl.memberBlock.members {
             guard
                 let varDecl = member.decl.as(VariableDeclSyntax.self),
-                let binding = varDecl.bindings.first,
-                let pattern = binding.pattern.as(IdentifierPatternSyntax.self)
+                varDecl.bindings.first?.accessorBlock == nil // only stored properties
             else { continue }
             
-            let propertyName = pattern.identifier.text
-            let transformed = transform(propertyName, to: style)
-            
-            if transformed != propertyName {
-                codingKeys.append("case \(propertyName) = \"\(transformed)\"")
-            } else {
-                codingKeys.append("case \(propertyName)")
+            for binding in varDecl.bindings {
+                guard let pattern = binding.pattern.as(IdentifierPatternSyntax.self) else { continue }
+                
+                let propertyName = pattern.identifier.text
+                let transformed = transform(propertyName, to: style)
+                
+                if transformed != propertyName {
+                    codingKeys.append("case \(propertyName) = \"\(transformed)\"")
+                } else {
+                    codingKeys.append("case \(propertyName)")
+                }
             }
         }
         
+        if codingKeys.isEmpty {
+            return []
+        }
+        
         let codingKeyDecl = """
-            enum CodingKeys: String, CodingKey {
-                \(codingKeys.joined(separator: "\n    "))
-            }
-            """
+        enum CodingKeys: String, CodingKey {
+            \(codingKeys.joined(separator: "\n    "))
+        }
+        """
         
         return [DeclSyntax(stringLiteral: codingKeyDecl)]
     }
-    
+
     private static func generateCodingKeys(for enumDecl: EnumDeclSyntax, style: AutoCodableCaseStyle) throws -> [DeclSyntax] {
         var codingKeys: [String] = []
         
@@ -86,15 +93,19 @@ public struct AutoCodableMacro: MemberMacro {
             }
         }
         
+        if codingKeys.isEmpty {
+            return []
+        }
+        
         let codingKeyDecl = """
-            enum CodingKeys: String, CodingKey {
-                \(codingKeys.joined(separator: "\n    "))
-            }
-            """
+        enum CodingKeys: String, CodingKey {
+            \(codingKeys.joined(separator: "\n    "))
+        }
+        """
         
         return [DeclSyntax(stringLiteral: codingKeyDecl)]
     }
-    
+
     private static func transform(_ name: String, to style: AutoCodableCaseStyle) -> String {
         switch style {
         case .original:
@@ -111,30 +122,31 @@ public struct AutoCodableMacro: MemberMacro {
             return camelToHttpHeader(name)
         }
     }
-    
+
     private static func camelToSnake(_ input: String) -> String {
-        var result = ""
-        for char in input {
-            if char.isUppercase {
-                result += "_" + char.lowercased()
-            } else {
-                result += String(char)
-            }
-        }
-        return result
+        let pattern = #"([a-z0-9])([A-Z])"#
+        let regex = try? NSRegularExpression(pattern: pattern, options: [])
+        let range = NSRange(location: 0, length: input.count)
+        let snake = regex?.stringByReplacingMatches(
+            in: input,
+            options: [],
+            range: range,
+            withTemplate: "$1_$2"
+        ).lowercased() ?? input.lowercased()
+        return snake
     }
-    
+
     private static func camelToHttpHeader(_ input: String) -> String {
-        var result = ""
-        for char in input {
-            if char.isUppercase {
-                result += "-" + String(char)
-            } else {
-                result += String(char)
-            }
-        }
-        // Capitalize each component
-        return result
+        let pattern = #"([a-z0-9])([A-Z])"#
+        let regex = try? NSRegularExpression(pattern: pattern, options: [])
+        let range = NSRange(location: 0, length: input.count)
+        let dashed = regex?.stringByReplacingMatches(
+            in: input,
+            options: [],
+            range: range,
+            withTemplate: "$1-$2"
+        ) ?? input
+        return dashed
             .split(separator: "-")
             .map { $0.prefix(1).uppercased() + $0.dropFirst() }
             .joined(separator: "-")
